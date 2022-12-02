@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+    T3:
+        image: pytorch/pytorch:1.13.0-cuda11.6-cudnn8-runtime
+        stdin_open: true
+        tty: true
+        network_mode: "host"
+        volumes:
+            - .:/home/table-to-text
+        deploy:
+          resources:
+            reservations:
+              devices:
+                capabilities: [gpu]
