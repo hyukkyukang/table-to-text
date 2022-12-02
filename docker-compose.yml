@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+    T3:
+        image: hyukkyukang/table-to-text:latest
+        stdin_open: true
+        tty: true
+        network_mode: "host"
+        volumes:
+            - .:/home/table-to-text
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - capabilities: [gpu]
