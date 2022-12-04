@@ -36,15 +36,12 @@ class TableToTextDatum:
         def flatten_row(row: List[str]) -> str:
             tmp = []
             for idx, item in enumerate(row):
-                try:
-                    tmp += [" ".join([self.cell_prefix,
-                                    item, 
-                                    self.col_header_prefix,
-                                    self.header_names[idx],
-                                    self.col_header_suffix,
-                                    self.cell_suffix])]
-                except:
-                    stop = 1
+                tmp += [" ".join([self.cell_prefix,
+                                item, 
+                                self.col_header_prefix,
+                                self.header_names[idx],
+                                self.col_header_suffix,
+                                self.cell_suffix])]
             return " ".join(tmp)
 
         if not (hasattr(self, "_input_str") and self._input_str):
@@ -106,7 +103,6 @@ class TableToTextDatum:
     @property
     def col_header_suffix(self):
         return "</col_header>"
-    
     
 
 @attrs.define
