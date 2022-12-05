@@ -5,7 +5,6 @@ RUN apt update
 RUN apt install gnupg git curl make g++ -y
 
 # Install requirements
-RUN git clone https://github.com/hyukkyukang/table-to-text.git /home
-RUN cd /home/table-to-text 
-RUN pip install -r requirements.txt
+RUN git clone https://oauth2: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@github.com/hyukkyukang/table-to-text.git /home/table-to-text
+RUN cd /home/table-to-text && pip install -r requirements.txt
 RUN python -c "import transformers; transformers.T5ForConditionalGeneration.from_pretrained('t5-small')"
