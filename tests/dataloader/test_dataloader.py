@@ -42,3 +42,6 @@ class Test_dataloader(unittest.TestCase):
         dataset = self._test_dataset(TottoDataset, dataset_dir, self.tokenizer)
         self._test_dataloader(dataset)
         self._print_sucess(len(dataset))
+
+if __name__ == "__main__":
+    unittest.main()
