@@ -33,7 +33,7 @@ class Test_dataloader(unittest.TestCase):
         mini_batch = next(iter(dataloader))
         self.assertIsNotNone(mini_batch, "Dataloder is empty!")
         self.assertGreater(len(mini_batch), 0, "Dataloder is empty!")
-    
+
     def _print_sucess(self, num_of_data):
         print(f"Passed loading {num_of_data} data")
     

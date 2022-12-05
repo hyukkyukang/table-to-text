@@ -10,6 +10,19 @@ from torch.utils.data import Dataset
 
 @attrs.define
 class TableToTextDatum:
+    # Static variables
+    page_prefix = "<page_title>"
+    page_suffix = "</page_title>"
+    section_prefix = "<section_title>"
+    section_suffix = "</section_title>"
+    table_prefix = "<table>"
+    table_suffix = "</table>"
+    cell_prefix = "<cell>"
+    cell_suffix = "</cell>"
+    col_header_prefix = "<col_header>"
+    col_header_suffix = "</col_header>"
+    
+    # Member variables
     raw_datum = attrs.field()
     tokenizer = attrs.field()
     id: int = attrs.field(default=None)
@@ -73,36 +86,6 @@ class TableToTextDatum:
             self._input_tensor = torch.tensor(self.input_str_ids)
         return self._input_tensor
         
-    @property
-    def page_prefix(self):
-        return "<page_title>"
-    @property
-    def page_suffix(self):
-        return "</page_title>"
-    @property
-    def section_prefix(self):
-        return "<section_title>"
-    @property
-    def section_suffix(self):
-        return "</section_title>"
-    @property
-    def table_prefix(self):
-        return "<table>"
-    @property
-    def table_suffix(self):
-        return "</table>"
-    @property
-    def cell_prefix(self):
-        return "<cell>"
-    @property
-    def cell_suffix(self):
-        return "</cell>"
-    @property
-    def col_header_prefix(self):
-        return "<col_header>"
-    @property
-    def col_header_suffix(self):
-        return "</col_header>"
     
 
 @attrs.define
