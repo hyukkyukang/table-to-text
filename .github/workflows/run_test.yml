@@ -30,6 +30,10 @@ jobs:
         steps:
             # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
             - uses: actions/checkout@v3
+            - uses: actions/setup-python@v4
+              with:
+                  python-version: "3.10"
+                  cache: "pip" # caching pip dependencies
 
             - name: Install dependecy
               working-directory: ${{ env.working-directory }}
@@ -49,3 +53,11 @@ jobs:
                   name: Python Unittest
                   path: ./src/*.xml
                   reporter: java-junit
+
+            - name: Run Coverage Test
+              run: coverage run -m unittest
+
+            - name: Upload Coverage to Codecov
+              uses: codecov/codecov-action@v3
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
