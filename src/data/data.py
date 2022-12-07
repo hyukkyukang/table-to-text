@@ -1,12 +1,14 @@
 import abc
-import tqdm
+from typing import Any, Dict, List, Tuple
+
 import attrs
 import torch
-
-from typing import List, Any, Dict, Tuple
-from hkkang_utils import tensor as tensor_utils
+import tqdm
 from hkkang_utils import file as file_utils
+from hkkang_utils import tensor as tensor_utils
 from torch.utils.data import Dataset
+
+from src.utils.logging import logger
 
 
 @attrs.define
@@ -148,14 +150,14 @@ class TableToTextDataset(Dataset):
     
     def __attrs_post_init__(self):
         # Read in data
-        print(f"Reading data from {self.file_path}")
+        logger.info(f"Reading data from {self.file_path}")
         raw_data = self._read_in_data_from_file(self.file_path)
-        print(f"Parsing data into Table-to-text data format...")
+        logger.info(f"Parsing data into Table-to-text data format...")
         data = [self._to_table_to_text_datum(raw_datum) for raw_datum in tqdm.tqdm(raw_data)]
         # Filter data with length greater than the tokenizer max length
         max_len = self.tokenizer.model_max_length
         self.data = [datum for datum in data if len(datum.input_tok_ids) <= max_len and len(datum.output_tok_ids) <= max_len]
-        print(f"Successfully parsed {len(self.data)} data instances.")
+        logger.info(f"Successfully parsed {len(self.data)} data instances.")
 
     @abc.abstractclassmethod
     def _read_in_data_from_file(self, file_paths: str) -> Any:

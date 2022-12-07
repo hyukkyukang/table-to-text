@@ -46,7 +46,15 @@ class Logger:
         if repo:
             active_branch_name = repo.active_branch.name
             last_commit_hash = repo.head.object.hexsha
-            return f"Git Info:\n\tbranch: {active_branch_name}\n\tlast commit hash: {last_commit_hash}"
+            last_commit_author = repo.head.object.author.name
+            last_commit_msg = repo.head.object.message
+            msg = f"Git Info:"
+            msg += f"\n\tbranch: {active_branch_name}"
+            msg += f"\n\t\tlast commit:"
+            msg += f"\n\t\t\thash: {last_commit_hash}"
+            msg += f"\n\t\t\tauthor: {last_commit_author}"
+            msg += f"\n\t\t\tmessage: {last_commit_msg}"
+            return msg
         return "Git Info: Not found"
     
     @property
