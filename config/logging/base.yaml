@@ -1,0 +1,13 @@
+name: logging
+
+file_handler: true
+file_handler_level: INFO
+
+console_handler: true
+console_handler_level: DEBUG
+
+dir_path: ./logdir/
+log_file_name: log_message.log
+config_file_name: "config.json"
+
+tag: null

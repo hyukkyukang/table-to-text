@@ -1,0 +1,5 @@
+name: optimizer
+
+lr: 1e-3
+max_step: 10000
+eval_freq_step: 1000

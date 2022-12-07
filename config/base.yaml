@@ -1,0 +1,8 @@
+name: base
+use_cuda: true
+
+defaults: 
+ - dataset: totto
+ - dataloader: base
+ - optimizer: base
+ - logging: base
