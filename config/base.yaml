@@ -1,0 +1,7 @@
+name: base
+
+defaults: 
+ - dataset: totto
+ - dataloader: base
+ - optimizer: base
+ - logging: base

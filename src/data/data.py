@@ -3,7 +3,7 @@ import tqdm
 import attrs
 import torch
 
-from typing import List, Any
+from typing import List, Any, Dict, Tuple
 from hkkang_utils import tensor as tensor_utils
 from torch.utils.data import Dataset
 
@@ -28,32 +28,54 @@ class TableToTextDatum:
     id: int = attrs.field(default=None)
     page_title: str = attrs.field(default=None)
     section_title: str = attrs.field(default=None)
-    header_names: List[str] = attrs.field(default=None)
+    header_names: List[List[str]] = attrs.field(default=None)
     rows: List[List[str]] = attrs.field(default=None)
+    cell_to_header_mapping: Dict[Tuple[int, int], Tuple[int,int]] = attrs.field(default=None)
     nl_sentence: str = attrs.field(default=None)
+    # Helper variables
     _input_str: str = attrs.field(default=None)
-    _input_str_ids: List[int] = attrs.field(default=None)
+    _input_tok_ids: List[int] = attrs.field(default=None)
     _input_tensor: torch.Tensor = attrs.field(default=None)
+    _output_str: str = attrs.field(default=None)
+    _output_tok_ids: List[int] = attrs.field(default=None)
+    _output_tensor: torch.Tensor = attrs.field(default=None)
 
     def __attrs_post_init__(self):        
         # Initialize data
         self._initialize_with_raw_data(self.raw_datum)
     
+
+    @classmethod
+    def additional_specifal_tokens(cls) -> List[str]:
+        return [cls.page_prefix, cls.page_suffix,
+                cls.section_prefix, cls.section_suffix,
+                cls.table_prefix, cls.table_suffix,
+                cls.cell_prefix, cls.cell_suffix,
+                cls.col_header_prefix, cls.col_header_suffix]
+
+    
     @abc.abstractclassmethod
     def _initialize_with_raw_data(self, raw_data: Any) -> None:
         """ Initialize data with raw_data """
         pass
-    
+
     @property
-    def input_str(self):
-        def flatten_row(row: List[str]) -> str:
+    def input_str(self) -> str:
+        def get_header_string(cell_row_idx, cell_col_idx):
+            cell_idx = (cell_row_idx, cell_col_idx)
+            if cell_idx in self.cell_to_header_mapping.keys():
+                header_row_idx, header_col_idx = self.cell_to_header_mapping[cell_idx]
+                selected_header_name = self.header_names[header_row_idx][header_col_idx]
+                return " ".join([self.col_header_prefix,
+                                selected_header_name,
+                                self.col_header_suffix])
+            return ""
+        def flatten_row(row_idx: int, row: List[str]) -> str:
             tmp = []
-            for idx, item in enumerate(row):
+            for col_idx, item in enumerate(row):
                 tmp += [" ".join([self.cell_prefix,
                                 item, 
-                                self.col_header_prefix,
-                                self.header_names[idx],
-                                self.col_header_suffix,
+                                get_header_string(row_idx, col_idx),
                                 self.cell_suffix])]
             return " ".join(tmp)
 
@@ -68,30 +90,48 @@ class TableToTextDatum:
                                        self.section_suffix])
             # Table
             table_str = " ".join([self.table_prefix,
-                                  " ".join(flatten_row(row) for row in self.rows),
+                                  " ".join(flatten_row(row_idx, row) for row_idx, row in enumerate(self.rows)),
                                   self.table_suffix,])
             # Combine all
             self._input_str = " ".join([page_title_str, section_title_str, table_str])
         return self._input_str            
     
     @property
-    def input_str_ids(self):
-        if not (hasattr(self, "_input_str_ids") and self._input_str_ids):
-            self._input_str_ids = self.tokenizer.encode(self.input_str, add_special_tokens=False)
-        return self._input_str_ids
+    def input_tok_ids(self) -> List[int]:
+        if not (hasattr(self, "_input_tok_ids") and self._input_tok_ids):
+            self._input_tok_ids = self.tokenizer.encode(self.input_str, add_special_tokens=False)
+        return self._input_tok_ids
     
     @property
-    def input_tensor(self):
-        if not (hasattr(self, "_input_tensor") and self._input_tensor is not None) and self.input_str_ids:
-            self._input_tensor = torch.tensor(self.input_str_ids)
+    def input_tensor(self) -> torch.Tensor:
+        if not (hasattr(self, "_input_tensor") and self._input_tensor is not None) and self.input_tok_ids:
+            self._input_tensor = torch.tensor(self.input_tok_ids)
         return self._input_tensor
-        
     
+    @property
+    def output_str(self) -> str:
+        return self.nl_sentence
+    
+    @property
+    def output_tok_ids(self) -> List[int]:
+        if not (hasattr(self, "_output_tok_ids") and self._output_tok_ids):
+            self._output_tok_ids = self.tokenizer.encode(self.output_str, add_special_tokens=False)
+        return self._output_tok_ids
+        
+    @property
+    def output_tensor(self) -> torch.Tensor:
+        if not (hasattr(self, "_output_tensor") and self._output_tensor is not None) and self.output_tok_ids:
+            self._output_tensor = torch.tensor(self.output_tok_ids)
+        return self._output_tensor
+
 
 @attrs.define
 class TableToTextBatch:
-    data: List[TableToTextDatum]
-    input_tensor: torch.Tensor
+    data: List[TableToTextDatum] = attrs.field()
+    input_tensor: torch.Tensor = attrs.field()
+    output_tensor: torch.Tensor = attrs.field()
+    input_mask_tensor: torch.Tensor = attrs.field(default=None) 
+    output_mask_tensor: torch.Tensor = attrs.field(default=None)
     
     def __getitem__(self, idx):
         return self.data[idx]
@@ -110,7 +150,12 @@ class TableToTextDataset(Dataset):
         print(f"Reading data from {self.file_path}")
         raw_data = self._read_in_data_from_file(self.file_path)
         print(f"Parsing data into Table-to-text data format...")
-        self.data = [self._to_table_to_text_datum(raw_datum) for raw_datum in raw_data]
+        data = [self._to_table_to_text_datum(raw_datum) for raw_datum in tqdm.tqdm(raw_data)]
+        # Filter data with length greater than the tokenizer max length
+        max_len = self.tokenizer.model_max_length
+        self.data = [datum for datum in data if len(datum.input_tok_ids) <= max_len and len(datum.output_tok_ids) <= max_len]
+        print(f"Successfully parsed {len(self.data)} data instances.")
+
 
     @abc.abstractclassmethod
     def _read_in_data_from_file(self, file_paths: str) -> Any:
@@ -130,4 +175,5 @@ class TableToTextDataset(Dataset):
 
 def collate_fn(item_list):
     input_tensor = tensor_utils.zero_pad_batching([item.input_tensor for item in item_list])
-    return TableToTextBatch(item_list, input_tensor)
+    output_tensor = tensor_utils.zero_pad_batching([item.output_tensor for item in item_list])
+    return TableToTextBatch(item_list, input_tensor, output_tensor)

@@ -1,0 +1,4 @@
+name: logging
+
+dir_path: ./outputs/
+file_name: out
