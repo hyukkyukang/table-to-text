@@ -1,4 +1,5 @@
 name: base
+use_cuda: true
 
 defaults: 
  - dataset: totto

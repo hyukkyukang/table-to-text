@@ -4,6 +4,7 @@ import wandb
 
 from hkkang_utils import file as file_utils
 from hkkang_utils import misc as misc_utils
+from hkkang_utils import tensor as tensor_utils
 
 # Internal modules
 from src.config import cfg
@@ -29,13 +30,18 @@ def eval():
 def compute_epoch(step, batch_size, dataset_size):
     return step * batch_size // dataset_size
 def main() -> None:
+    # Show setting
+    tensor_utils.show_environment_setting()
+    torch.backends.cuda.matmul.allow_tf32 = True
+    device = torch.device('cuda' if cfg.use_cuda and torch.cuda.is_available() else 'cpu')
+    
     # Set wandb
     wandb.init(project="table-to-text", entity="hyukkyukang")
     wandb.config=cfg
     # Set logger
     add_file_handler(cfg.logging.dir_path, cfg.logging.file_name)
 
-    model = T3()
+    model = T3().to(device)
     # Update tokenizer
     model.tokenizer.add_special_tokens({"additional_special_tokens": TottoDatum.additional_specifal_tokens()})
 
@@ -48,9 +54,9 @@ def main() -> None:
     step = 1
     for data in misc_utils.infinite_iterator(dataloader):
         # Forward
-        loss = model.compute_loss(data.input_tensor, data.output_tensor)
+        loss = model.compute_loss(data.input_tensor.to(device), data.output_tensor.to(device))
+        optimizer.zero_grad()
         loss.backward()
-        # Train
         optimizer.step()
         # Logging/
         print(f"Step: {step}, Loss: {loss}")
@@ -75,5 +81,4 @@ if __name__ == "__main__":
     main()
 
 # Implement evaluation
-# Implement optimizer
 # Implement logging
