@@ -4,3 +4,4 @@ transformers
 hkkang_utils
 unittest-xml-reporting
 hydra-core
+gitpython

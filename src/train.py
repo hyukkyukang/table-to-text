@@ -2,34 +2,30 @@
 import torch
 import wandb
 
-from hkkang_utils import file as file_utils
 from hkkang_utils import misc as misc_utils
 from hkkang_utils import tensor as tensor_utils
 
 # Internal modules
 from src.config import cfg
 from src.model.T3 import T3
-from src.data.data import collate_fn
 from src.data.totto_data import TottoDataset, TottoDatum
-from src.utils.logging import logger, add_file_handler
+from src.utils.logging import logger
 
-def get_dataloader(tokenizer):
-    # create dataset
-    file_paths = file_utils.get_files_in_directory(cfg.dataset.dir_path, lambda file_name: file_name.startswith("totto_train_data") and file_name.endswith(".jsonl"))
-    dataset = TottoDataset(file_paths[0], tokenizer)
-    # Create dataloader
-    dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=cfg.dataloader.train.batch_size, num_workers=cfg.dataloader.train.num_workers, collate_fn=collate_fn)
-    return dataloader
-
-def train():
-    pass
+def compute_epoch(step, batch_size, dataset_size):
+    return step * batch_size // dataset_size
 
 def eval():
     pass
 
-def compute_epoch(step, batch_size, dataset_size):
-    return step * batch_size // dataset_size
-def main() -> None:
+def test_logging():
+    logger.debug("hello debug")
+    logger.info("hello log")
+    logger.warning("hello warn")
+
+def train():
+    # display config
+    logger.debug(f"config:\n{cfg.to_json()}")
+    
     # Show setting
     tensor_utils.show_environment_setting()
     torch.backends.cuda.matmul.allow_tf32 = True
@@ -38,15 +34,13 @@ def main() -> None:
     # Set wandb
     wandb.init(project="table-to-text", entity="hyukkyukang")
     wandb.config=cfg
-    # Set logger
-    add_file_handler(cfg.logging.dir_path, cfg.logging.file_name)
 
     model = T3().to(device)
     # Update tokenizer
     model.tokenizer.add_special_tokens({"additional_special_tokens": TottoDatum.additional_specifal_tokens()})
 
     # Create dataloader
-    dataloader = get_dataloader(model.tokenizer)
+    dataloader = TottoDataset.get_dataloader(model.tokenizer, cfg)
 
     # Set optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.optimizer.lr)
@@ -78,7 +72,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    test_logging()
+    # train()
+    
 
 # Implement evaluation
 # Implement logging

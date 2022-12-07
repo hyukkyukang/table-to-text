@@ -5,6 +5,7 @@ import torch
 
 from typing import List, Any, Dict, Tuple
 from hkkang_utils import tensor as tensor_utils
+from hkkang_utils import file as file_utils
 from torch.utils.data import Dataset
 
 
@@ -156,7 +157,6 @@ class TableToTextDataset(Dataset):
         self.data = [datum for datum in data if len(datum.input_tok_ids) <= max_len and len(datum.output_tok_ids) <= max_len]
         print(f"Successfully parsed {len(self.data)} data instances.")
 
-
     @abc.abstractclassmethod
     def _read_in_data_from_file(self, file_paths: str) -> Any:
         """ Read in data from file """
@@ -166,6 +166,15 @@ class TableToTextDataset(Dataset):
     def _to_table_to_text_datum(self, raw_datum: Any) -> TableToTextDatum:
         """ Create List of TableToTextDatum from raw_data """
         pass
+
+    @classmethod
+    def get_dataloader(cls, tokenizer, cfg):
+        # create dataset
+        file_paths = file_utils.get_files_in_directory(cfg.dataset.dir_path, lambda file_name: file_name in cfg.dataset.train_file_names)
+        dataset = cls(file_paths[0], tokenizer)
+        # Create dataloader
+        dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=cfg.dataloader.train.batch_size, num_workers=cfg.dataloader.train.num_workers, collate_fn=collate_fn)
+        return dataloader
     
     def __getitem__(self, idx):
         return self.data[idx]
