@@ -41,7 +41,7 @@ class Trainer():
         if self._device is None:
             self._device = torch.device('cuda' if cfg.use_cuda and torch.cuda.is_available() else 'cpu')
         return self._device
-    
+
     @property
     def model(self):
         if self._model is None:
@@ -90,7 +90,11 @@ class Trainer():
             with training_context() as tc:
                 # Forward
                 self.optimizer.zero_grad()
-                loss = self.model.compute_loss(data.input_tensor.to(self.device), data.output_tensor.to(self.device))
+                # TODO: Check collate_fn and get masking for encoder and decoder (check huggingface document as well)
+                loss = self.model.compute_loss(data.input_tensor.to(self.device), 
+                                               data.output_tensor.to(self.device),
+                                               data.input_att_mask_tensor.to(self.device),
+                                               data.output_att_mask_tensor.to(self.device))
                 loss.backward()
                 self.optimizer.step()
                 
@@ -117,4 +121,3 @@ if __name__ == "__main__":
     trainer.train()
 
 # Implement evaluation
-# Check collate fn

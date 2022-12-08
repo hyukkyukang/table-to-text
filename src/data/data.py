@@ -133,8 +133,8 @@ class TableToTextBatch:
     data: List[TableToTextDatum] = attrs.field()
     input_tensor: torch.Tensor = attrs.field()
     output_tensor: torch.Tensor = attrs.field()
-    input_mask_tensor: torch.Tensor = attrs.field(default=None) 
-    output_mask_tensor: torch.Tensor = attrs.field(default=None)
+    input_att_mask_tensor: torch.Tensor = attrs.field(default=None) 
+    output_att_mask_tensor: torch.Tensor = attrs.field(default=None)
     
     def __getitem__(self, idx):
         return self.data[idx]
@@ -185,6 +185,7 @@ class TableToTextDataset(Dataset):
         return len(self.data)
 
 def collate_fn(item_list):
-    input_tensor = tensor_utils.zero_pad_batching([item.input_tensor for item in item_list])
-    output_tensor = tensor_utils.zero_pad_batching([item.output_tensor for item in item_list])
-    return TableToTextBatch(item_list, input_tensor, output_tensor)
+    input_tensor, input_mask_tensor = tensor_utils.zero_pad_batching([item.input_tensor for item in item_list])
+    output_tensor, output_mask_tensor = tensor_utils.zero_pad_batching([item.output_tensor for item in item_list])
+    input_att_mask_tensor, output_att_mask_tensor = torch.logical_not(input_mask_tensor), torch.logical_not(output_mask_tensor)
+    return TableToTextBatch(item_list, input_tensor, output_tensor, input_att_mask_tensor, output_att_mask_tensor)

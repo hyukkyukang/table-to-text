@@ -1,7 +1,7 @@
 import torch
 import transformers
 
-from typing import List
+from typing import List, Optional
 
 
 class T3(torch.nn.Module):
@@ -24,9 +24,9 @@ class T3(torch.nn.Module):
         input_prefix_tensor = self.input_prefix_tok_tensor.repeat(x.shape[0], 1)
         return torch.concat([input_prefix_tensor, x], dim=-1)
 
-    def compute_loss(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def compute_loss(self, x: torch.Tensor, y: torch.Tensor, attention_mask: Optional[torch.Tensor]=None, decoder_attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         input_ids = self._append_input_prefix(x)
-        return self.model(input_ids=input_ids, labels=y)[0]
+        return self.model(input_ids=input_ids, labels=y, attention_mask=attention_mask, decoder_attention_mask=decoder_attention_mask)[0]
 
     def generate(self, x: torch.Tensor) -> torch.Tensor:
         input_ids = self._append_input_prefix(x)
