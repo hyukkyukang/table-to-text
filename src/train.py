@@ -1,15 +1,22 @@
+# This must be called first
+# TODO: Change the design of importing global config to sync override_hydra_config() and global_cfg
+from src.config import global_cfg, override_hydra_config
+override_hydra_config()
+
+# 
 import os
+import math
 import json
 import attrs
 import torch
 import wandb
+import hydra
 from omegaconf import OmegaConf
 from hkkang_utils import misc as misc_utils
 from hkkang_utils import tensor as tensor_utils
 from hkkang_utils import file as file_utils
 
 # Internal modules
-from src.config import cfg
 from src.data.totto_data import TottoDataset, TottoDatum
 from src.model.T3 import T3
 from src.utils.logging import logger
@@ -21,8 +28,12 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 class Training_context():
     """Syntatic sugar to keep track of training step"""
     def __init__(self, cfg):
-        self.eval_freq_step = cfg.eval_freq_step
-        self.max_step = cfg.max_step
+        self.eval_freq_estep = cfg.optimizer.eval_freq_estep
+        self.max_estep = cfg.optimizer.max_estep
+        self.effective_batch_size = cfg.optimizer.effective_batch_size
+        self.dataloader_batch_size = cfg.dataloader.train.batch_size
+        # Cache variables
+        self._steps_per_estep = None
 
     def __enter__(self):
         Trainer.step += 1
@@ -32,12 +43,30 @@ class Training_context():
         pass
 
     @property
+    def steps_per_estep(self):
+        if not self._steps_per_estep:
+            self._steps_per_estep = math.ceil(self.effective_batch_size / self.dataloader_batch_size)
+        return self._steps_per_estep
+
+    @property
+    def step(self):
+        return Trainer.step
+
+    @property
+    def estep(self):
+        return Trainer.step // self.steps_per_estep
+
+    @property
+    def is_state_to_update(self):
+        return self.step != 0 and not (self.step % self.steps_per_estep)
+
+    @property
     def is_state_to_eval(self):
-        return not (Trainer.step % self.eval_freq_step)
+        return self.estep != 0 and not (self.estep % self.eval_freq_estep)
 
     @property
     def is_state_to_exit(self):
-        return Trainer.step >= self.max_step
+        return self.estep >= self.max_estep
 
 
 @attrs.define
@@ -63,7 +92,7 @@ class Trainer():
     @property
     def device(self):
         if self._device is None:
-            self._device = torch.device('cuda' if cfg.use_cuda and torch.cuda.is_available() else 'cpu')
+            self._device = torch.device('cuda' if self.cfg.use_cuda and torch.cuda.is_available() else 'cpu')
         return self._device
 
     @property
@@ -77,25 +106,25 @@ class Trainer():
     def train_dataloader(self):
         if self._train_dataloader is None:
             self._train_dataloader = TottoDataset.get_dataloader(self.model.tokenizer,
-                                                                cfg.dataset.dir_path,
-                                                                cfg.dataset.train_file_names,
-                                                                cfg.dataloader.train.batch_size,
-                                                                cfg.dataloader.train.num_workers)
+                                                                self.cfg.dataset.dir_path,
+                                                                self.cfg.dataset.train_file_names,
+                                                                self.cfg.dataloader.train.batch_size,
+                                                                self.cfg.dataloader.train.num_workers)
         return self._train_dataloader
     @property
     def val_dataloader(self):
         if self._val_dataloader is None:
             self._val_dataloader = TottoDataset.get_dataloader(self.model.tokenizer, 
-                                                               cfg.dataset.dir_path,
-                                                               cfg.dataset.val_file_names,
-                                                               cfg.dataloader.val.batch_size,
-                                                               cfg.dataloader.val.num_workers)
+                                                               self.cfg.dataset.dir_path,
+                                                               self.cfg.dataset.val_file_names,
+                                                               self.cfg.dataloader.val.batch_size,
+                                                               self.cfg.dataloader.val.num_workers)
         return self._val_dataloader
 
     @property
     def optimizer(self):
         if self._optimizer is None:
-            self._optimizer = torch.optim.Adam(self.model.parameters(), lr=cfg.optimizer.lr)
+            self._optimizer = torch.optim.Adam(self.model.parameters(), lr=self.cfg.optimizer.lr)
         return self._optimizer
 
     @property
@@ -119,12 +148,11 @@ class Trainer():
     @property
     def eval_pred_file_path(self):
         return os.path.join(self.eval_dir_path, f"pred_step_{self.step}.txt")
-    
+
     @property
     def eval_gold_file_path(self):
         return os.path.join(self.eval_dir_path, "val_gold.jsonl")
 
-    @property
     def save(self):
         save_dic = {
             "model": self.model.state_dict(),
@@ -136,25 +164,28 @@ class Trainer():
     def train(self):
         # display git, config, environment setting
         logger.debug(logger.git_info)
-        logger.debug(f"config:\n{OmegaConf.to_yaml(cfg)}")
+        logger.debug(f"config:\n{OmegaConf.to_yaml(self.cfg)}")
         tensor_utils.show_environment_setting(logger.debug)
 
         # Set wandb
         wandb.init(project="table-to-text", entity="hyukkyukang")
-        wandb.config=cfg
-        
+        wandb.config=self.cfg
+
         # Begin Train loop
+        self.optimizer.zero_grad()
         for data in misc_utils.infinite_iterator(self.train_dataloader):
-            with Training_context(cfg.optimizer) as tc:
+            with Training_context(self.cfg) as tc:
                 # Forward
-                self.optimizer.zero_grad()
                 # TODO: Check collate_fn and get masking for encoder and decoder (check huggingface document as well)
                 loss = self.model.compute_loss(data.input_tensor.to(self.device), 
                                                data.output_tensor.to(self.device),
                                                data.input_att_mask_tensor.to(self.device),
                                                data.output_att_mask_tensor.to(self.device))
                 loss.backward()
-                self.optimizer.step()
+                # If step to update
+                if tc.is_state_to_update:
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
 
                 # Logging
                 logger.info(f"Step: {self.step}, Loss: {loss}")
@@ -184,7 +215,7 @@ class Trainer():
                 for batch_data in self.val_dataloader:
                     for datum in batch_data:
                         f.write(json.dumps(datum.raw_datum)+"\n")
-                
+
         # Create prediction file
         inferences = []
         for data in self.val_dataloader:
@@ -214,7 +245,9 @@ class Trainer():
             self.parent_best_step = self.step
             self.save()
 
+def main():
+    trainer = Trainer(global_cfg)
+    trainer.train()
 
 if __name__ == "__main__":
-    trainer = Trainer(cfg)
-    trainer.train()
+    main()

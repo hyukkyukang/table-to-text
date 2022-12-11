@@ -9,7 +9,7 @@ import traceback
 from omegaconf import OmegaConf
 from hkkang_utils import file as file_utils
 # Local modules
-from src.config import cfg as config
+from src.config import global_cfg as config
 
 
 python_logger = logging.getLogger()
@@ -128,7 +128,7 @@ class Logger:
     def error(self, *args, **kwargs):
         args = self.append_caller_location_to_msg(*args)
         logging.error(*args, **kwargs)
-        
+
 
 logger = Logger(config)
 
