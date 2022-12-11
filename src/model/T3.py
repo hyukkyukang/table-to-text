@@ -59,7 +59,7 @@ class T3(torch.nn.Module):
 
     def compute_loss(self, x: torch.Tensor, y: torch.Tensor, attention_mask: Optional[torch.Tensor]=None, decoder_attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         input_ids = self.append_input_prefix(x)
-        if attention_mask:
+        if attention_mask is not None:
             attention_mask = self.append_input_prefix_att_mask(attention_mask)
         return self.model(input_ids=input_ids, labels=y, attention_mask=attention_mask, decoder_attention_mask=decoder_attention_mask)[0]
 
@@ -69,7 +69,7 @@ class T3(torch.nn.Module):
 
     def _raw_generate(self, x: torch.Tensor, attention_mask: Optional[torch.Tensor]=None, **kwargs) -> torch.Tensor:
         input_ids = self.append_input_prefix(x)
-        if attention_mask:
+        if attention_mask is not None:
             attention_mask = self.append_input_prefix_att_mask(attention_mask)
             kwargs["attention_mask"] = attention_mask
         kwargs["max_new_tokens"] = 256

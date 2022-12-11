@@ -41,5 +41,3 @@ if __name__ == "__main__":
     # Show results
     print("input text: ", args.input)
     print("Inferred text: ", inferred_text)
-
-from transformers import T5Tokenizer, T5Model

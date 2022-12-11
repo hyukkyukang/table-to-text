@@ -62,7 +62,7 @@ class Training_context():
 
     @property
     def is_state_to_eval(self):
-        return self.estep != 0 and not (self.estep % self.eval_freq_estep)
+        return self.is_state_to_update and not (self.estep % self.eval_freq_estep)
 
     @property
     def is_state_to_exit(self):
@@ -208,7 +208,7 @@ class Trainer():
     def evaluate(self):
         # Set dir and file paths
         file_utils.create_directory(self.eval_dir_path)
-        
+
         # write raw validation data if not exists
         if not os.path.exists(self.eval_gold_file_path):
             with open(self.eval_gold_file_path, "w") as f:
@@ -232,6 +232,8 @@ class Trainer():
         parent_precision = result[1][0]["precision"]
         parent_recall = result[1][0]["recall"]
         parent_fscore = result[1][0]["fscore"]
+        logger.info(f"BLEU score: {bleu_score} at step {self.step}")
+        logger.info(f"Parent Fscore: {parent_fscore} at step {self.step}")
         # Update best score
         if self.bleu_score < bleu_score:
             logger.info(f"New best bleu score: {bleu_score} at step {self.step} (previous: {self.bleu_score})")
