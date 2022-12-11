@@ -39,10 +39,11 @@ class T3(torch.nn.Module):
         attention_mask = self._append_input_prefix_att_mask(attention_mask)
         return self.model(input_ids=input_ids, labels=y, attention_mask=attention_mask, decoder_attention_mask=decoder_attention_mask)[0]
 
-    def generate(self, x: torch.Tensor) -> torch.Tensor:
+    def generate(self, x: torch.Tensor, attention_mask: Optional[torch.Tensor]=None) -> torch.Tensor:
         input_ids = self._append_input_prefix(x)
         attention_mask = self._append_input_prefix_att_mask(attention_mask)
-        return self.model.generate(input_ids)
+        result_tensor = self.model.generate(input_ids, max_new_tokens=256)
+        return self.tokenizer.batch_decode(result_tensor, skip_special_tokens=True)
 
 
 if __name__ == "__main__":

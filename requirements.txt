@@ -5,3 +5,4 @@ hkkang_utils
 unittest-xml-reporting
 hydra-core
 gitpython
+wandb

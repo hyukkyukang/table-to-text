@@ -2,7 +2,7 @@ FROM pytorch/pytorch:1.13.0-cuda11.6-cudnn8-runtime
 
 # Install basic packages
 RUN apt update
-RUN apt install gnupg git curl make g++ tzdata -y
+RUN apt install gnupg git curl make g++ wget zip tzdata -y
 
 # Install requirements
 RUN git clone https://oauth2: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@github.com/hyukkyukang/table-to-text.git /home/table-to-text

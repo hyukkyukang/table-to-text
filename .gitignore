@@ -164,3 +164,4 @@ dataset/
 .vscode/
 wandb/
 logdir/
+temp/

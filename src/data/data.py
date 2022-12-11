@@ -170,12 +170,12 @@ class TableToTextDataset(Dataset):
         pass
 
     @classmethod
-    def get_dataloader(cls, tokenizer, cfg):
+    def get_dataloader(cls, tokenizer, dir_path, train_file_names, batch_size, num_workers):
         # create dataset
-        file_paths = file_utils.get_files_in_directory(cfg.dataset.dir_path, lambda file_name: file_name in cfg.dataset.train_file_names)
+        file_paths = file_utils.get_files_in_directory(dir_path, lambda file_name: file_name in train_file_names)
         dataset = cls(file_paths[0], tokenizer)
         # Create dataloader
-        dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=cfg.dataloader.train.batch_size, num_workers=cfg.dataloader.train.num_workers, collate_fn=collate_fn)
+        dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=collate_fn)
         return dataloader
     
     def __getitem__(self, idx):
