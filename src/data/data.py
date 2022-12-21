@@ -2,6 +2,7 @@ import abc
 from typing import Any, Dict, List, Tuple
 
 import attrs
+import omegaconf
 import torch
 import tqdm
 from hkkang_utils import file as file_utils
@@ -170,9 +171,15 @@ class TableToTextDataset(Dataset):
         pass
 
     @classmethod
-    def get_dataloader(cls, tokenizer, dir_path, train_file_names, batch_size, num_workers):
+    def get_dataloader(cls, tokenizer, dir_path, train_file_names, batch_size=1, num_workers=0):
+        def handle_file_names(file_names):
+            """ Make file_names argument flexible. Can be a string or a list of strings """
+            if type(file_names) == str:
+                return [file_names]
+            assert isinstance(file_names, omegaconf.ListConfig), f"file_names must be a string or a list of strings, but found {type(file_names)}"
+            return file_names
         # create dataset
-        file_paths = file_utils.get_files_in_directory(dir_path, lambda file_name: file_name in train_file_names)
+        file_paths = file_utils.get_files_in_directory(dir_path, lambda file_name: file_name in handle_file_names(train_file_names))
         dataset = cls(file_paths[0], tokenizer)
         # Create dataloader
         dataloader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=collate_fn)

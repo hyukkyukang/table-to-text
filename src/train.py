@@ -124,7 +124,7 @@ class Trainer():
     @property
     def optimizer(self):
         if self._optimizer is None:
-            self._optimizer = torch.optim.Adam(self.model.parameters(), lr=self.cfg.optimizer.lr)
+            self._optimizer = torch.optim.Adam(self.model.parameters(), lr=float(self.cfg.optimizer.lr))
         return self._optimizer
 
     @property
@@ -196,7 +196,7 @@ class Trainer():
                 # Eval condition
                 if tc.is_state_to_eval:
                     self.evaluate()
-                    
+
                 # Exit condition
                 if tc.is_state_to_exit: 
                     break
@@ -245,7 +245,7 @@ class Trainer():
             self.parent_recall = parent_recall
             self.parent_fscore = parent_fscore
             self.parent_best_step = self.step
-            self.save()
+        self.save()
 
 def main():
     trainer = Trainer(global_cfg)
