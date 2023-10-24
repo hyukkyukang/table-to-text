@@ -6,3 +6,4 @@ defaults:
  - dataloader: base
  - optimizer: base
  - logging: base
+ - _self_

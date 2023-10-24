@@ -7,7 +7,7 @@ services:
         tty: true
         network_mode: "host"
         volumes:
-            - .:/home/table-to-text
+            - .:/root/table-to-text
         deploy:
             resources:
                 reservations:

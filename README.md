@@ -14,7 +14,7 @@ docker compose up -d
 
 ```bash
 sh script/download_totto.sh
-pip install -r evaluation/language_repo/language/totto/totto_requirements.txt
+pip install -r evaluation/language_repo/language/totto/eval_requirements.txt
 cd evaluation/language_repo/ && python setup.py install
 ```
 

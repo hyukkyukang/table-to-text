@@ -1,0 +1,4 @@
+name: totto
+dir_path: /root/table-to-text/dataset/totto_data/
+train_file_names: ["totto_train_data.jsonl"]
+val_file_names: ["totto_dev_data.jsonl"]

@@ -160,9 +160,9 @@ cython_debug/
 #.idea/
 
 # Custom
-dataset/
+/dataset/
 .vscode/
-wandb/
-logdir/
-temp/
+/wandb/
+/logdir/
+/temp/
 evaluation/
