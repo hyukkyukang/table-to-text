@@ -10,7 +10,6 @@ import json
 import attrs
 import torch
 import wandb
-import hydra
 from omegaconf import OmegaConf
 from hkkang_utils import misc as misc_utils
 from hkkang_utils import tensor as tensor_utils

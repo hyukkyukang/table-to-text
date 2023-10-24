@@ -1,5 +1,6 @@
+import os
 import abc
-from typing import Any, Dict, List, Tuple
+from typing import *
 
 import attrs
 import omegaconf
@@ -151,10 +152,19 @@ class TableToTextDataset(Dataset):
     
     def __attrs_post_init__(self):
         # Read in data
-        logger.info(f"Reading data from {self.file_path}")
-        raw_data = self._read_in_data_from_file(self.file_path)
-        logger.info(f"Parsing data into Table-to-text data format...")
-        data = [self._to_table_to_text_datum(raw_datum) for raw_datum in tqdm.tqdm(raw_data)]
+        cache_path = f"{self.file_path}.cache"
+        if os.path.isfile(cache_path):
+            logger.info(f"Loading cache from {cache_path}")
+            data = file_utils.read_pickle_file(cache_path)
+        else:
+            logger.info(f"Reading data from {self.file_path}")
+            raw_data = self._read_in_data_from_file(self.file_path)
+            logger.info(f"Parsing data into Table-to-text data format...")
+            data = [self._to_table_to_text_datum(raw_datum) for raw_datum in tqdm.tqdm(raw_data)]
+            # Save cache
+            logger.info(f"Saving cache to {cache_path}")
+            file_utils.write_pickle_file(data, cache_path)
+            
         # Filter data with length greater than the tokenizer max length
         max_len = self.tokenizer.model_max_length
         self.data = [datum for datum in data if len(datum.input_tok_ids) <= max_len and len(datum.output_tok_ids) <= max_len]
