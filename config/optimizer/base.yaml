@@ -1,6 +1,6 @@
 name: optimizer
 
-lr: 1e-3
+lr: 1e-4
 max_estep: 10000
 eval_freq_estep: 1000
-effective_batch_size: 512
+effective_batch_size: 256

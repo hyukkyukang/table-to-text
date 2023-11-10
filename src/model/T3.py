@@ -27,8 +27,8 @@ class LogitsProcessor(transformers.LogitsProcessor):
 class T3(torch.nn.Module):
     def __init__(self):
         super(T3, self).__init__()
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained("t5-small")
-        self.model = transformers.AutoModelForSeq2SeqLM.from_pretrained("t5-small")
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained("google/t5-v1_1-large")
+        self.model = transformers.AutoModelForSeq2SeqLM.from_pretrained("google/t5-v1_1-large")
 
     @property
     def input_prefix(self) -> str:
