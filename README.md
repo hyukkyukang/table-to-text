@@ -34,3 +34,6 @@ Run python srcipts in `src` directory. Note that the guiding text is optional.
 ```bash
 python src/infer.py --input [string of table] --saved_path [location of saved model] --guidance [guiding text]
 ```
+## Evaluation
+For the evaluation, we conducted a user study following the [Provenance for natural language queries (VLDB'17)](https://dl.acm.org/doi/pdf/10.14778/3055540.3055550) paper.
+The pdf in the repository contains the questions (query, result table, and natural language query) for the conducted user study.
